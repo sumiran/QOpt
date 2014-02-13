@@ -4,35 +4,20 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
-
-
-
-
-
-
-
-
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
-
-
-
-
 
 //Download and add this library to the build path.
 import org.apache.commons.codec.binary.Base64;
 import org.dom4j.*;
 import org.dom4j.io.*;
 
-import com.sun.corba.se.impl.encoding.OSFCodeSetRegistry.Entry;
-
 class Term implements Comparable<Term>
 {
 	public String word;
 	int score;
 	
+	@Override
 	public int compareTo(Term o) {
 		return score - o.score;
 	};
@@ -88,8 +73,6 @@ public class BingTest {
 	      try 
 	      { 
 
-	            OutputFormat format = OutputFormat.createPrettyPrint(); 
-
 	            XMLWriter writer = new XMLWriter(new FileWriter(new File(filename))); 
 	            writer.write(document); 
 	            writer.close();             
@@ -107,12 +90,11 @@ public class BingTest {
 		{
 			entries = new ArrayList<Entry>();
 			
-			SAXReader reader = new SAXReader();
 			Document doc = document;
 			Element root = doc.getRootElement();
 			Element foo;
 			//iterator xml file to fetch data into our class
-			for(Iterator i = root.elementIterator("entry");i.hasNext();)
+			for(Iterator<Element> i = root.elementIterator("entry");i.hasNext();)
 			{
 				Entry entry = new Entry();
 				foo = (Element) i.next();
@@ -146,7 +128,7 @@ public class BingTest {
 	
 	public static void mergeTermInList(String word, ArrayList<Term> list, int additionalScore)
 	{
-		for(int i=0;i<list.length;i++)
+		for(int i=0;i<list.size();i++)
 		{
 			if(list.get(i).word.equals(word))
 			{
@@ -197,7 +179,7 @@ public class BingTest {
 			ArrayList<Entry> relevant = new ArrayList<Entry>();
 			ArrayList<Entry> notRelevant = new ArrayList<Entry>();
 			
-			for(int i=0;i<entries.length;i++)
+			for(int i=0;i<entries.size();i++)
 			{
 				System.out.println("Result "+(i+1)+": ");
 				System.out.println("[");
@@ -218,7 +200,7 @@ public class BingTest {
 				}
 			}
 			
-			currentP = relevantDocs/results.length;
+			currentP = relevantDocs/entries.size();
 			
 			/*
 URL
@@ -241,7 +223,7 @@ append max 2 scores and repeat
 			if(currentP < targetP)
 			{
 				String allRelevantTitlesString = "";
-				for(int i=0;i<relevant.length;i++)
+				for(int i=0;i<relevant.size();i++)
 				{
 					allRelevantTitlesString += relevant.get(i).Title;
 				}
@@ -253,7 +235,7 @@ append max 2 scores and repeat
 				
 				
 				String allRelevantDescriptionsString = "";
-				for(int i=0;i<relevant.length;i++)
+				for(int i=0;i<relevant.size();i++)
 				{
 					allRelevantDescriptionsString += relevant.get(i).Description;
 				}
@@ -265,7 +247,7 @@ append max 2 scores and repeat
 				
 				
 				String allRelevantURLsString = "";
-				for(int i=0;i<relevant.length;i++)
+				for(int i=0;i<relevant.size();i++)
 				{
 					allRelevantURLsString += relevant.get(i).Url;
 				}
@@ -276,9 +258,9 @@ append max 2 scores and repeat
 				String[] relevantURLs = allRelevantURLsString.split(" ");
 				
 				String allNonRelevantTitlesString = "";
-				for(int i=0;i<nonRelevant.length;i++)
+				for(int i=0;i<notRelevant.size();i++)
 				{
-					allNonRelevantTitlesString += nonRelevant.get(i).Title;
+					allNonRelevantTitlesString += notRelevant.get(i).Title;
 				}
 				
 				//allRelevantTitlesString.replaceAll("[,.!;:\"\'\-\+]", " ");
@@ -288,9 +270,9 @@ append max 2 scores and repeat
 				
 				
 				String allNonRelevantDescriptionsString = "";
-				for(int i=0;i<nonRelevant.length;i++)
+				for(int i=0;i<notRelevant.size();i++)
 				{
-					allNonRelevantDescriptionsString += nonRelevant.get(i).Description;
+					allNonRelevantDescriptionsString += notRelevant.get(i).Description;
 				}
 				
 				//allRelevantTitlesString.replaceAll("[,.!;:\"\'\-\+]", " ");
@@ -300,9 +282,9 @@ append max 2 scores and repeat
 				
 				
 				String allNonRelevantURLsString = "";
-				for(int i=0;i<nonRelevant.length;i++)
+				for(int i=0;i<notRelevant.size();i++)
 				{
-					allNonRelevantURLsString += nonRelevant.get(i).Url;
+					allNonRelevantURLsString += notRelevant.get(i).Url;
 				}
 				
 				//allRelevantTitlesString.replaceAll("[,.!;:\"\'\-\+]", " ");
@@ -316,7 +298,7 @@ append max 2 scores and repeat
 				Arrays.sort(relevantURLs);
 				Arrays.sort(nonRelevantTitles);
 				Arrays.sort(nonRelevantDescriptions);
-				Arrays.sort(allNonRelevantURLsString);
+				Arrays.sort(nonRelevantURLs);
 				
 				ArrayList<Term> terms = new ArrayList<Term>();
 				
@@ -363,12 +345,12 @@ append max 2 scores and repeat
 					mergeTermInList(word, terms, -10);
 				}
 				
-				Arrays.sort(terms);
+				Collections.sort(terms);
 				
-				String newTerm1 = terms.get(0);
-				String newTerm2 = terms.get(1);
+				String newTerm1 = terms.get(0).word;
+				String newTerm2 = terms.get(1).word;
 				
-				q += " " + newTerm1 + " " newTerm2 ;
+				q += " " + newTerm1 + " " + newTerm2 ;
 			}
 		}
 		while(currentP < targetP && currentP > 0);
