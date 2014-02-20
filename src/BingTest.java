@@ -48,9 +48,9 @@ class StringHelper
 	public static ArrayList<String> englishStopWords = new ArrayList<String>(Arrays.asList(new String[] {"a", "about", "above", "across", "after", "again", "against", "all", "almost", "alone", "along", "already", "also", "although", "always", "among", "an", "and", "another", "any", "anybody", "anyone", "anything", "anywhere", "are", "area", "areas", "around", "as", "ask", "asked", "asking", "asks", "at", "away", "b", "back", "backed", "backing", "backs", "be", "became", "because", "become", "becomes", "been", "before", "began", "behind", "being", "beings", "best", "better", "between", "big", "both", "but", "by", "c", "came", "can", "cannot", "case", "cases", "certain", "certainly", "clear", "clearly", "come", "could", "d", "did", "differ", "different", "differently", "do", "does", "done", "down", "down", "downed", "downing", "downs", "during", "e", "each", "early", "either", "end", "ended", "ending", "ends", "enough", "even", "evenly", "ever", "every", "everybody", "everyone", "everything", "everywhere", "f", "face", "faces", "fact", "facts", "far", "felt", "few", "find", "finds", "first", "for", "four", "from", "full", "fully", "further", "furthered", "furthering", "furthers", "g", "gave", "general", "generally", "get", "gets", "give", "given", "gives", "go", "going", "good", "goods", "got", "great", "greater", "greatest", "group", "grouped", "grouping", "groups", "h", "had", "has", "have", "having", "he", "her", "here", "herself", "high", "high", "high", "higher", "highest", "him", "himself", "his", "how", "however", "i", "if", "important", "in", "interest", "interested", "interesting", "interests", "into", "is", "it", "its", "itself", "j", "just", "k", "keep", "keeps", "kind", "knew", "know", "known", "knows", "l", "large", "largely", "last", "later", "latest", "least", "less", "let", "lets", "like", "likely", "long", "longer", "longest", "m", "made", "make", "making", "man", "many", "may", "me", "member", "members", "men", "might", "more", "most", "mostly", "mr", "mrs", "much", "must", "my", "myself", "n", "necessary", "need", "needed", "needing", "needs", "never", "new", "new", "newer", "newest", "next", "no", "nobody", "non", "noone", "not", "nothing", "now", "nowhere", "number", "numbers", "o", "of", "off", "often", "old", "older", "oldest", "on", "once", "one", "only", "open", "opened", "opening", "opens", "or", "order", "ordered", "ordering", "orders", "other", "others", "our", "out", "over", "p", "part", "parted", "parting", "parts", "per", "perhaps", "place", "places", "point", "pointed", "pointing", "points", "possible", "present", "presented", "presenting", "presents", "problem", "problems", "put", "puts", "q", "quite", "r", "rather", "really", "right", "right", "room", "rooms", "s", "said", "same", "saw", "say", "says", "second", "seconds", "see", "seem", "seemed", "seeming", "seems", "sees", "several", "shall", "she", "should", "show", "showed", "showing", "shows", "side", "sides", "since", "small", "smaller", "smallest", "so", "some", "somebody", "someone", "something", "somewhere", "state", "states", "still", "still", "such", "sure", "t", "take", "taken", "than", "that", "the", "their", "them", "then", "there", "therefore", "these", "they", "thing", "things", "think", "thinks", "this", "those", "though", "thought", "thoughts", "three", "through", "thus", "to", "today", "together", "too", "took", "toward", "turn", "turned", "turning", "turns", "two", "u", "under", "until", "up", "upon", "us", "use", "used", "uses", "v", "very", "w", "want", "wanted", "wanting", "wants", "was", "way", "ways", "we", "well", "wells", "went", "were", "what", "when", "where", "whether", "which", "while", "who", "whole", "whose", "why", "will", "with", "within", "without", "work", "worked", "working", "works", "would", "x", "y", "year", "years", "yet", "you", "young", "younger", "youngest", "your", "yours", "z"}));
 	public static ArrayList<String> internetStopWords = new ArrayList<String>(Arrays.asList(new String[]{ "http", "www", "index", "html", "encyclopedia", "dictionary", "en", "asp", "aspx", "php", "com", "org", "ie", "page", "utf8", "utf16", "utf32", "utf64", "etc" }));
 	
-	public static String sanitizeStringBag(String bag, String originalQuery)
+	public static String sanitizeStringBag(String bag, String query)
 	{
-		String[] originalQueryTerms = originalQuery.split(" ");
+		String[] originalQueryTerms = query.split(" ");
 		
 		bag = bag.replaceAll("[^a-zA-Z0-9]", " ");
 		
@@ -138,6 +138,37 @@ class StringHelper
 	    return lcsLength;
 	}
 	
+	public static String matchRelativeOrder(String query, String descriptionBag)
+	{
+		String[] queryTerms = query.split(" ");
+		String[] descriptionBagWords = sanitizeStringBag(descriptionBag, "").split(" ");
+		int[] relativeOrder = new int[queryTerms.length];
+		
+		int position = 0;
+		
+		for(int i=0;i<descriptionBagWords.length;i++)
+		{
+			for(int j=0;j<queryTerms.length;j++)
+			{
+				if( StringHelper.isSameWord(descriptionBagWords[i], queryTerms[j] ))
+				{
+					relativeOrder[j] = position++;
+					break;
+				}
+			}
+		}
+		
+		String orderedQuery = "";
+		
+		for(int i=0;i<queryTerms.length;i++)
+		{
+			orderedQuery += queryTerms[relativeOrder[i]] + " ";
+		}
+		
+		
+		return orderedQuery.trim();
+	}
+	
 }
 
 
@@ -145,16 +176,14 @@ public class BingTest {
 
 	static ArrayList<Entry> entries;
 	static Document document;
-	public static void search(String key) throws IOException, DocumentException
+	public static void search(String queryTerm) throws IOException, DocumentException
 	{
+		System.out.println("Bing is now searching for '"+queryTerm+"' (without quotes)...");
+		queryTerm = queryTerm.replaceAll(" ","%20");
 		
-		key = key.replaceAll(" ","%20");
-		String bingUrl = "https://api.datamarket.azure.com/Bing/SearchWeb/Web?Query=%27" + key +"%27&$top=10&$format=Atom";
-		//Provide your account key here. 
-		
+		String bingUrl = "https://api.datamarket.azure.com/Bing/SearchWeb/Web?Query=%27" + queryTerm +"%27&$top=10&$format=Atom";
 		String accountKey = "E4Zv/pCEQ0AuHsYlNrOuXkZtjbRs2b4gFZYjiiuZj78";
 		
-		System.out.println(accountKey);
 		byte[] accountKeyBytes = Base64.encodeBase64((accountKey + ":" + accountKey).getBytes());
 		String accountKeyEnc = new String(accountKeyBytes);
 
@@ -168,11 +197,6 @@ public class BingTest {
 		String content = new String(contentRaw);
 		
 		document = DocumentHelper.parseText(content);
-		
-		System.out.println(content);
-		//save the contents to xml file
-		//The content string is the xml/json output from Bing.
-	
 	}
 
 	public static void analyze() throws Exception
@@ -189,15 +213,10 @@ public class BingTest {
 			{
 				Entry entry = new Entry();
 				foo = (Element) i.next();
-				entry.id = foo.elementText("id");
-				entry.title = foo.elementText("title");
-				entry.updated = foo.elementText("updated");
 				Element content = foo.element("content");
 				Element properties = content.element("properties");
-				entry.ID = properties.elementText("ID");
 				entry.Title = properties.elementText("Title");
 				entry.Description = properties.elementText("Description");
-				entry.DisplayUrl = properties.elementText("DisplayUrl");
 				entry.Url = properties.elementText("Url");
 				entries.add(entry);
 			}
@@ -206,14 +225,19 @@ public class BingTest {
 		{
 			e.printStackTrace();
 		}
-			
-			
-		
 	}
 
-	public static void searchAndReturn(String query) throws Exception {
-		search(query);
-		analyze();
+	public static void searchAndReturn(String query) {
+		try
+		{
+			search(query);
+			analyze();
+		}
+		catch(Exception e)
+		{
+			System.out.println("Something went wrong while querying Bing: "+e.getMessage());
+			System.out.println("Stack trace: "+e.getStackTrace());
+		}
 	}
 	
 	
@@ -234,197 +258,210 @@ public class BingTest {
 	
 	
 	
-	public static void main(String args[]) throws Exception {
-		
-		
-		
-		System.out.println(StringHelper.longestSubstringLength("car", "cars"));
-		System.out.println(StringHelper.longestSubstringLength("encyclopedia", "wikipedia"));
-		
-		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		
-		System.out.print("Enter search query: ");
-		String q = br.readLine();
-		q = q.toLowerCase();
-		StringHelper.englishStopWords.remove(q);
-		StringHelper.internetStopWords.remove(q);
-		
-		double targetP = 0.0; 
-		boolean validP = false;
-		do
+	public static void main(String args[])
+	{
+		try
 		{
-			System.out.print("Enter desired precision@10: ");
-			try
+			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+			
+			System.out.print("Enter search query: ");
+			String q = br.readLine();
+			
+			//Bing does case insensitive search anyways. For simplicity we treat all data in lowecase in this program
+			q = q.toLowerCase();
+			
+			//In case the query happens to contain a stop word, we remove that word from our list of stop words
+			String[] qTerms = q.split(" ");
+			for(int i=0;i<qTerms.length;i++)
 			{
-				targetP = Double.parseDouble(br.readLine());
-				if(targetP > 0.0 && targetP <= 1.0)
+				StringHelper.englishStopWords.remove(qTerms[i]);
+				StringHelper.internetStopWords.remove(qTerms[i]);
+			}
+			
+			double targetP = 0.0; 
+			boolean validP = false;
+			do
+			{
+				System.out.print("Enter desired precision@10: ");
+				try
 				{
-					validP = true;
+					targetP = Double.parseDouble(br.readLine());
+					if(targetP > 0.0 && targetP <= 1.0)
+					{
+						validP = true;
+					}
+				}
+				catch(Exception e)
+				{
+					
 				}
 			}
-			catch(Exception e)
+			while(!validP);
+			
+			double currentP = 0.0;
+			
+			do
 			{
+				searchAndReturn(q);
 				
+				currentP = 0.0;
+				int relevantDocs = 0;
+				ArrayList<Entry> relevant = new ArrayList<Entry>();
+				ArrayList<Entry> notRelevant = new ArrayList<Entry>();
+				
+				for(int i=0;i<entries.size();i++)
+				{
+					System.out.println("Result "+(i+1)+": ");
+					System.out.println("[");
+					System.out.println("\tTitle:   "+entries.get(i).Title);
+					System.out.println("\tSummary: "+entries.get(i).Description);
+					System.out.println("\tURL:     "+entries.get(i).Url);
+					System.out.println("]");
+					System.out.println("Relevant? (y/n): ");
+					String feedback = br.readLine();
+					if(feedback.toLowerCase().charAt(0) == 'y')
+					{
+						relevantDocs += 1;
+						relevant.add(entries.get(i));
+					}
+					else
+					{
+						notRelevant.add(entries.get(i));
+					}
+				}
+				
+				currentP = relevantDocs*1.0/entries.size();
+				
+				/*
+				URL
+				Title
+				Summary
+				
+				
+				Q = original query
+				X = set of relevant results
+				Y = set of irrelevant results
+				
+				For X and Y, remove all stop words from summary and title, and break URL.
+				URL: get all subdomains, path names. Remove standard values from path names (index, htm, html, pdf, txt, jpg, jpeg, png, gif)
+				
+				For each remaining word, calculate "co-relevancy score" based on number of times it appears in X - no of times it appears in Y. Multiply by weight for each occurrence if it is in title as opposed to summary.
+				
+				
+				append max 2 scores and repeat
+				 * */
+				if(currentP < targetP && currentP > 0)
+				{
+					String allRelevantTitlesString = "";
+					for(int i=0;i<relevant.size();i++)
+					{
+						allRelevantTitlesString += relevant.get(i).Title + " ";
+					}
+					String[] relevantTitles = StringHelper.sanitizeStringBag(allRelevantTitlesString, q).split(" ");
+					
+					
+					String allRelevantDescriptionsString = "";
+					for(int i=0;i<relevant.size();i++)
+					{
+						allRelevantDescriptionsString += relevant.get(i).Description + " ";
+					}
+					String[] relevantDescriptions = StringHelper.sanitizeStringBag(allRelevantDescriptionsString, q).split(" ");
+					
+					
+					String allRelevantURLsString = "";
+					for(int i=0;i<relevant.size();i++)
+					{
+						allRelevantURLsString += relevant.get(i).Url + " ";
+					}
+					String[] relevantURLs = StringHelper.sanitizeStringBag(allRelevantURLsString, q).split(" ");
+					
+					String allNonRelevantTitlesString = "";
+					for(int i=0;i<notRelevant.size();i++)
+					{
+						allNonRelevantTitlesString += notRelevant.get(i).Title + " ";
+					}
+					String[] nonRelevantTitles = StringHelper.sanitizeStringBag(allNonRelevantTitlesString, q).split(" ");
+					
+					
+					String allNonRelevantDescriptionsString = "";
+					for(int i=0;i<notRelevant.size();i++)
+					{
+						allNonRelevantDescriptionsString += notRelevant.get(i).Description + " ";
+					}
+					String[] nonRelevantDescriptions = StringHelper.sanitizeStringBag(allNonRelevantDescriptionsString, q).split(" ");
+					
+					
+					String allNonRelevantURLsString = "";
+					for(int i=0;i<notRelevant.size();i++)
+					{
+						allNonRelevantURLsString += notRelevant.get(i).Url + " ";
+					}
+					String[] nonRelevantURLs = StringHelper.sanitizeStringBag(allNonRelevantURLsString, q).split(" ");
+					
+					/*
+					Arrays.sort(relevantTitles);
+					Arrays.sort(relevantDescriptions);
+					Arrays.sort(relevantURLs);
+					Arrays.sort(nonRelevantTitles);
+					Arrays.sort(nonRelevantDescriptions);
+					Arrays.sort(nonRelevantURLs);
+					*/
+					
+					ArrayList<Term> terms = new ArrayList<Term>();
+					
+					for(int i=0;i<relevantTitles.length;i++)
+					{
+						String word = relevantTitles[i];
+						mergeTermInList(word, terms, 10);
+					}
+					
+					for(int i=0;i<relevantDescriptions.length;i++)
+					{
+						String word = relevantDescriptions[i];
+						mergeTermInList(word, terms, 5);
+					}
+					
+					for(int i=0;i<relevantURLs.length;i++)
+					{
+						String word = relevantURLs[i];
+						mergeTermInList(word, terms, 3);
+					}
+					
+					for(int i=0;i<nonRelevantTitles.length;i++)
+					{
+						String word = nonRelevantTitles[i];
+						mergeTermInList(word, terms, -20);
+					}
+					
+					for(int i=0;i<nonRelevantDescriptions.length;i++)
+					{
+						String word = nonRelevantDescriptions[i];
+						mergeTermInList(word, terms, -10);
+					}
+					
+					for(int i=0;i<nonRelevantURLs.length;i++)
+					{
+						String word = nonRelevantURLs[i];
+						mergeTermInList(word, terms, -6);
+					}
+					
+					Collections.sort(terms);
+					
+					String newTerm1 = terms.get(0).word;
+					String newTerm2 = terms.get(1).word;
+					
+					q += " " + newTerm1 + " " + newTerm2 ;
+					
+					//q = StringHelper.matchRelativeOrder(q, allRelevantDescriptionsString);
+				}
 			}
+			while(currentP < targetP && currentP > 0);
 		}
-		while(!validP);
-		
-		double currentP = 0.0;
-		
-		do
+		catch(Exception e)
 		{
-			searchAndReturn(q);
-			
-			currentP = 0.0;
-			int relevantDocs = 0;
-			ArrayList<Entry> relevant = new ArrayList<Entry>();
-			ArrayList<Entry> notRelevant = new ArrayList<Entry>();
-			
-			for(int i=0;i<entries.size();i++)
-			{
-				System.out.println("Result "+(i+1)+": ");
-				System.out.println("[");
-				System.out.println("\tTitle:   "+entries.get(i).Title);
-				System.out.println("\tSummary: "+entries.get(i).Description);
-				System.out.println("\tURL:     "+entries.get(i).Url);
-				System.out.println("]");
-				System.out.println("Relevant? (y/n): ");
-				String feedback = br.readLine();
-				if(feedback.toLowerCase().charAt(0) == 'y')
-				{
-					relevantDocs += 1;
-					relevant.add(entries.get(i));
-				}
-				else
-				{
-					notRelevant.add(entries.get(i));
-				}
-			}
-			
-			currentP = relevantDocs*1.0/entries.size();
-			
-			/*
-URL
-Title
-Summary
-
-
-Q = original query
-X = set of relevant results
-Y = set of irrelevant results
-
-For X and Y, remove all stop words from summary and title, and break URL.
-URL: get all subdomains, path names. Remove standard values from path names (index, htm, html, pdf, txt, jpg, jpeg, png, gif)
-
-For each remaining word, calculate "co-relevancy score" based on number of times it appears in X - no of times it appears in Y. Multiply by weight for each occurrence if it is in title as opposed to summary.
-
-
-append max 2 scores and repeat
-			 * */
-			if(currentP < targetP)
-			{
-				String allRelevantTitlesString = "";
-				for(int i=0;i<relevant.size();i++)
-				{
-					allRelevantTitlesString += relevant.get(i).Title;
-				}
-				String[] relevantTitles = StringHelper.sanitizeStringBag(allRelevantTitlesString, q).split(" ");
-				
-				
-				String allRelevantDescriptionsString = "";
-				for(int i=0;i<relevant.size();i++)
-				{
-					allRelevantDescriptionsString += relevant.get(i).Description;
-				}
-				String[] relevantDescriptions = StringHelper.sanitizeStringBag(allRelevantDescriptionsString, q).split(" ");
-				
-				
-				String allRelevantURLsString = "";
-				for(int i=0;i<relevant.size();i++)
-				{
-					allRelevantURLsString += relevant.get(i).Url;
-				}
-				String[] relevantURLs = StringHelper.sanitizeStringBag(allRelevantURLsString, q).split(" ");
-				
-				String allNonRelevantTitlesString = "";
-				for(int i=0;i<notRelevant.size();i++)
-				{
-					allNonRelevantTitlesString += notRelevant.get(i).Title;
-				}
-				String[] nonRelevantTitles = StringHelper.sanitizeStringBag(allNonRelevantTitlesString, q).split(" ");
-				
-				
-				String allNonRelevantDescriptionsString = "";
-				for(int i=0;i<notRelevant.size();i++)
-				{
-					allNonRelevantDescriptionsString += notRelevant.get(i).Description;
-				}
-				String[] nonRelevantDescriptions = StringHelper.sanitizeStringBag(allNonRelevantDescriptionsString, q).split(" ");
-				
-				
-				String allNonRelevantURLsString = "";
-				for(int i=0;i<notRelevant.size();i++)
-				{
-					allNonRelevantURLsString += notRelevant.get(i).Url;
-				}
-				String[] nonRelevantURLs = StringHelper.sanitizeStringBag(allNonRelevantURLsString, q).split(" ");
-				
-				
-				Arrays.sort(relevantTitles);
-				Arrays.sort(relevantDescriptions);
-				Arrays.sort(relevantURLs);
-				Arrays.sort(nonRelevantTitles);
-				Arrays.sort(nonRelevantDescriptions);
-				Arrays.sort(nonRelevantURLs);
-				
-				ArrayList<Term> terms = new ArrayList<Term>();
-				
-				for(int i=0;i<relevantTitles.length;i++)
-				{
-					String word = relevantTitles[i];
-					mergeTermInList(word, terms, 10);
-				}
-				
-				for(int i=0;i<relevantDescriptions.length;i++)
-				{
-					String word = relevantDescriptions[i];
-					mergeTermInList(word, terms, 5);
-				}
-				
-				for(int i=0;i<relevantURLs.length;i++)
-				{
-					String word = relevantURLs[i];
-					mergeTermInList(word, terms, 3);
-				}
-				
-				for(int i=0;i<nonRelevantTitles.length;i++)
-				{
-					String word = nonRelevantTitles[i];
-					mergeTermInList(word, terms, -20);
-				}
-				
-				for(int i=0;i<nonRelevantDescriptions.length;i++)
-				{
-					String word = nonRelevantDescriptions[i];
-					mergeTermInList(word, terms, -10);
-				}
-				
-				for(int i=0;i<nonRelevantURLs.length;i++)
-				{
-					String word = nonRelevantURLs[i];
-					mergeTermInList(word, terms, -6);
-				}
-				
-				Collections.sort(terms);
-				
-				String newTerm1 = terms.get(0).word;
-				String newTerm2 = terms.get(1).word;
-				
-				q += " " + newTerm1 + " " + newTerm2 ;
-			}
+			System.out.println("Something went wrong: "+e.getMessage());
+			System.out.println("Stack trace: "+e.getStackTrace());
 		}
-		while(currentP < targetP && currentP > 0);
-		
 		
 	}
 
